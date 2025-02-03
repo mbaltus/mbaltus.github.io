@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Retrieve a FHIR Patient</title>
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
+</head>
+
+<body>
+  <script>
+    const client = FHIR.client({
+      serverUrl: "https://server.fire.ly/r4"
+  });
+
+  client => client.request("Patient/example-r4"))
+      .then(console.log)
+      .catch(console.error);
+  </script>
+
+<h1>Hello World</h1>
+<p>I'm hosted with GitHub Pages.</p>
+</body>
+</html>
