@@ -1,10 +1,9 @@
-<!DOCTYPE html>
 <html lang="en">
 
 <head>
 
   <meta charset="utf-8" />
-  <title>Pages for training exercises</title>
+  <title>Retrieve a FHIR Patient</title>
 
   <link rel="icon" href="static/styles/common/favicon.ico" />
 
@@ -20,6 +19,7 @@
 
   <link rel="stylesheet" href="static/styles/twolevelmenu/style.css?v=1da42fd98e2a000" />
 
+  <script src="https://cdn.jsdelivr.net/npm/fhirclient/build/fhir-client.js"></script>
 </head>
 
 <body>
@@ -38,7 +38,7 @@
                   <span class="icon-bar"></span>
                 </button>
 
-                <a class="navbar-brand" href="#">
+                <a class="navbar-brand" href="index.html">
                   Training exercises
                 </a>
 
@@ -82,30 +82,64 @@
           <div class="row">
             <div class="col-md-24">
               <div id="preview-content">
-                <p>This is the start of the exercise pages for Mirjam's training course</p>
-                <p>Click on any of the pages to get to an exercise:</p>
+  <h1 id="page-title">Retrieve a FHIR Patient</h1>
+  Please input a Patient's technical id and click on 'Retrieve':<br><br>
+  <label for="tech-id">Technical id</label>
+  <input type="text" id="tech-id" name="tech-id">
+  <input type="button" value="Retrieve"/>
+  <br><br>
+  <div id="patient"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="ig-view-footer" role="contentinfo" aria-label="Footer">
+<div class="container">
+<div class="row">
+</div>
+</div>
+</div>
+</div>
 
-                <p>
-                  <ul>
-                    <li><a href="retrieve.html">Retrieve a Patient</a></li>
-                    <li><a href="create.html">Create a Patient</a></li>
-                    <li><a href="obs.html">Add an Observation</a></li>
-                    <li><a href="search.html">Search for Patients</a></li>
-                  </ul>
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ig-view-footer" role="contentinfo" aria-label="Footer">
-      <div class="container">
-        <div class="row">
-        </div>
-      </div>
-    </div>
-  </div>
 </body>
+<script type="text/javascript">
+  function displayPatient(data) {
+    const output = document.getElementById("patient");
+    output.innerHTML =
+        "<i>Patient " + document.getElementById("tech-id").value + " was retrieved</i><br><br>Patient's name(s): " +
+        getPatientName(data) + "<br>Born on: " + getPatientBirthdate(data);
+  }
+
+  function displayError(data) {
+      const output = document.getElementById("patient");
+      if (data.name == "HttpError")
+        output.innerText = "Error: Patient not found (HttpError 404)";
+    }
+
+  function getPatientName (pt) {
+    if (pt.name) {
+      var names = pt.name.map(function(name) {
+        return name.given.join(" ") + " " + name.family;
+      });
+      return names.join(" / ")
+    } else {
+      return "anonymous";
+    }
+  }
+  function getPatientBirthdate (pt) {
+    return pt.birthDate ? pt.birthDate : "<i>no date given</i>";
+  }
+  const retrieveBtn = document.querySelector('input[type="button"]');
+
+  const client = FHIR.client("https://hapi.fhir.org/baseR4");
+
+  retrieveBtn.onclick = () => {
+  client.request("Patient/" + document.getElementById("tech-id").value)
+    .then(displayPatient)
+    .catch(displayError);
+  }
+</script>
 
 </html>
