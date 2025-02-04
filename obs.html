@@ -199,7 +199,8 @@
 
   const createBtn = document.getElementById("create");
 
-  const client = FHIR.client("https://hapi.fhir.org/baseR4");
+  //const client = FHIR.client("https://hapi.fhir.org/baseR4");
+  const client = FHIR.client("https://server.fire.ly/R4");
 
   createBtn.onclick = () => {
     var obs = makeObservation();

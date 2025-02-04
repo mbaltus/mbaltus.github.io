@@ -161,7 +161,8 @@
 
   const retrieveBtn = document.getElementById("retrieve");
 
-  const client = FHIR.client("https://hapi.fhir.org/baseR4");
+  //const client = FHIR.client("https://hapi.fhir.org/baseR4");
+  const client = FHIR.client("https://server.fire.ly/R4");
 
   retrieveBtn.onclick = () => {
     client.request("Patient/" + document.getElementById("tech-id").value)
