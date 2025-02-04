@@ -116,7 +116,8 @@
   function displayBundle(data) {
     const output = document.getElementById("bundle");
     output.innerHTML =
-      "<i>The Patient type was successfully searched</i><br><br>There are " + getBundleCount(data) + " results on the server.<br>" +
+      //"<i>The Patient type was successfully searched</i><br><br>There are " + getBundleCount(data) + " results on the server.<br>" +
+      "<i>The Patient type was successfully searched</i><br><br>" +
       "The server has returned these results: <br>" +
       getEntryInfo(data);
 
@@ -179,8 +180,10 @@
 
   searchBtn.onclick = () => {
     document.getElementById("bundle").innerHTML = "Loading...";
-    client.request("/Patient?_total=accurate&" + document.getElementById("search-param").value +
-                  "=" + document.getElementById("search-val").value)
+    //client.request("/Patient?_total=accurate&" + document.getElementById("search-param").value +
+    //              "=" + document.getElementById("search-val").value)
+    client.request("/Patient?" + document.getElementById("search-param").value +
+                   "=" + document.getElementById("search-val").value)
     .then(displayBundle)
     .catch(displayError);
   }
