@@ -3,7 +3,7 @@
 <head>
 
   <meta charset="utf-8" />
-  <title>Retrieve a FHIR Patient</title>
+  <title>Searching FHIR Patients</title>
 
   <link rel="icon" href="static/styles/common/favicon.ico" />
 
@@ -56,13 +56,13 @@
                         </a>
                       </li>
                       <li>
-                        <a href="create.html">
+                        <a href="search.html">
                           Create a Patient
                         </a>
                       </li>
                       <li>
                         <a href="obs.html">
-                          Add an Observation
+                          Add an bundle
                         </a>
                       </li>
                       <li>
@@ -82,40 +82,43 @@
           <div class="row">
             <div class="col-md-24">
               <div id="preview-content">
-  <h1 id="page-title">Retrieve a FHIR Patient</h1>
-  Please input a Patient's technical id and click on 'Retrieve':<br><br>
-  <label for="tech-id">Technical id</label>
-  <input type="text" id="tech-id" name="tech-id">
-  <input type="button" id="retrieve" value="Retrieve"/>
-  <br><br>
-  <div id="patient"></div>
-  <br><br>
-  <input type="button" id="showBtn" value="Show JSON" hidden/>
-  <div id="show"></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="ig-view-footer" role="contentinfo" aria-label="Footer">
-<div class="container">
-<div class="row">
-</div>
-</div>
-</div>
-</div>
+                <h1 id="page-title">Searching FHIR Patients</h1>
+                Please enter a search parameter name and value, then click 'Search':<br><br>
+                <label for="search-param">Search parameter </label>
+                <input type="text" id="search-param" name="search"><br>
+                <label for="search-val">Search value </label>
+                <input type="text" id="search-val" name="search-val"><br><br>
+
+                <input type="button" id="search" value="Search" />
+                <br><br>
+                <div id="bundle"></div>
+                <br><br>
+                <input type="button" id="showBtn" value="Show JSON" hidden />
+                <div id="show"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ig-view-footer" role="contentinfo" aria-label="Footer">
+      <div class="container">
+        <div class="row">
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 <script type="text/javascript">
   var resource = null;
 
-  function displayPatient(data) {
-    const output = document.getElementById("patient");
+  function displayBundle(data) {
+    const output = document.getElementById("bundle");
     output.innerHTML =
-        "<i>Patient " + document.getElementById("tech-id").value + " was retrieved</i><br><br>Patient's name(s): " +
-        getPatientName(data) + "<br>Born on: " + getPatientBirthdate(data) + "<br>" +
-        "Identifiers: " + getPatientIdentifier(data);
+      "<i>The Patient type was successfully searched</i><br><br>There are " + getBundleCount(data) + " results on the server.<br>" +
+      "The server has returned these results: <br>" +
+      getEntryInfo(data);
 
     resource = data;
     document.getElementById("show").innerText = null;
@@ -123,49 +126,62 @@
   }
 
   function displayError(data) {
-      const output = document.getElementById("patient");
-      if (data.name == "HttpError")
-        output.innerText = "Error: Patient not found (HttpError 404)";
+    const output = document.getElementById("bundle");
+    if (data.name == "HttpError")
+      output.innerText = "Error: Patient could not be searched with the details entered, please check your search parameter name";
 
-      document.getElementById("showBtn").hidden = true;
-      document.getElementById("show").innerText = null;
+    document.getElementById("showBtn").hidden = true;
+    document.getElementById("show").innerText = null;
   }
 
+  function getBundleCount(bdl) {
+    return bdl.total? bdl.total : (bdl.entry? "an unknown number of": "0");
+  }
+  function getEntryInfo(bdl) {
+    if (bdl.entry) {
+        var entries = bdl.entry.map(function(entry) {
+          return "<li>" + getPatientName(entry.resource) + "<br><ul>" + getPatientIdentifier(entry.resource) +"</ul></li>";
+        });
+        return "<ul>"+ entries.join("") + "</ul>";
+    } else {
+      return "<i>zero results</i>";
+    }
+  }
   function getPatientName (pt) {
     if (pt.name) {
       var names = pt.name.map(function(name) {
-        return name.given.join(" ") + " " + name.family;
+        return name.given?.join(" ") + " " + name.family;
       });
       return names.join(" / ")
     } else {
       return "anonymous";
     }
   }
-  function getPatientBirthdate (pt) {
-    return pt.birthDate ? pt.birthDate : "<i>no date given</i>";
-  }
   function getPatientIdentifier (pt) {
     if (pt.identifier) {
-      var identifiers = pt.identifier.map(function(identifier) {
-        return identifier.system + "|" + identifier.value;
+      var names = pt.identifier.map(function(identifier) {
+        return "<li>" + identifier.system + "|" + identifier.value + "</li>";
       });
-      return identifiers.join("; ")
+      return names.join("")
     } else {
       return "<i>no identifiers</i>";
-    }  }
+    }
+  }
 
   function showJson(res) {
     const output = document.getElementById("show");
     output.innerText = JSON.stringify(res, null, 4);
   }
 
-  const retrieveBtn = document.getElementById("retrieve");
+  const searchBtn = document.getElementById("search");
 
   const client = FHIR.client("https://hapi.fhir.org/baseR4");
 
-  retrieveBtn.onclick = () => {
-    client.request("Patient/" + document.getElementById("tech-id").value)
-    .then(displayPatient)
+  searchBtn.onclick = () => {
+    document.getElementById("bundle").innerHTML = "Loading...";
+    client.request("/Patient?_total=accurate&" + document.getElementById("search-param").value +
+                  "=" + document.getElementById("search-val").value)
+    .then(displayBundle)
     .catch(displayError);
   }
 

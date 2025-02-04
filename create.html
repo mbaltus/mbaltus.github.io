@@ -3,7 +3,7 @@
 <head>
 
   <meta charset="utf-8" />
-  <title>Retrieve a FHIR Patient</title>
+  <title>Create a FHIR Patient</title>
 
   <link rel="icon" href="static/styles/common/favicon.ico" />
 
@@ -82,16 +82,20 @@
           <div class="row">
             <div class="col-md-24">
               <div id="preview-content">
-  <h1 id="page-title">Retrieve a FHIR Patient</h1>
-  Please input a Patient's technical id and click on 'Retrieve':<br><br>
-  <label for="tech-id">Technical id</label>
-  <input type="text" id="tech-id" name="tech-id">
-  <input type="button" id="retrieve" value="Retrieve"/>
+  <h1 id="page-title">Create a FHIR Patient</h1>
+  Please input some Patient details and click on 'Create':<br><br>
+  <label for="given">Given name </label>
+  <input type="text" id="given" name="given"><br>
+  <label for="family">Family name </label>
+  <input type="text" id="family" name="family"><br>
+  <label for="identifier">Identifier value </label>
+  <input type="text" id="identifier" name="identifier"><br>
+  <label for="birthdate">Date of birth </label>
+  <input type="date" id="birthdate" name="birthdate"><br><br>
+
+  <input type="button" id="create" value="Create"/>
   <br><br>
   <div id="patient"></div>
-  <br><br>
-  <input type="button" id="showBtn" value="Show JSON" hidden/>
-  <div id="show"></div>
 </div>
 </div>
 </div>
@@ -113,65 +117,74 @@
   function displayPatient(data) {
     const output = document.getElementById("patient");
     output.innerHTML =
-        "<i>Patient " + document.getElementById("tech-id").value + " was retrieved</i><br><br>Patient's name(s): " +
-        getPatientName(data) + "<br>Born on: " + getPatientBirthdate(data) + "<br>" +
-        "Identifiers: " + getPatientIdentifier(data);
+        "<i>The Patient was successfully created</i><br><br>The server has created the Patient with technical id: " +
+        getPatientId(data);
 
     resource = data;
-    document.getElementById("show").innerText = null;
-    document.getElementById("showBtn").hidden = false;
   }
 
   function displayError(data) {
       const output = document.getElementById("patient");
       if (data.name == "HttpError")
-        output.innerText = "Error: Patient not found (HttpError 404)";
+        output.innerText = "Error: Patient could not be created";
+    }
 
-      document.getElementById("showBtn").hidden = true;
-      document.getElementById("show").innerText = null;
-  }
-
-  function getPatientName (pt) {
-    if (pt.name) {
-      var names = pt.name.map(function(name) {
-        return name.given.join(" ") + " " + name.family;
-      });
-      return names.join(" / ")
+  function getPatientId (pt) {
+    if (pt.id) {
+      return pt.id;
     } else {
-      return "anonymous";
+      return "something went wrong: no id present";
     }
   }
-  function getPatientBirthdate (pt) {
-    return pt.birthDate ? pt.birthDate : "<i>no date given</i>";
-  }
-  function getPatientIdentifier (pt) {
-    if (pt.identifier) {
-      var identifiers = pt.identifier.map(function(identifier) {
-        return identifier.system + "|" + identifier.value;
-      });
-      return identifiers.join("; ")
-    } else {
-      return "<i>no identifiers</i>";
-    }  }
 
-  function showJson(res) {
-    const output = document.getElementById("show");
-    output.innerText = JSON.stringify(res, null, 4);
+  function makePatient() {
+    const given = document.getElementById("given").value;
+    const family = document.getElementById("family").value;
+    const birthdate = document.getElementById("birthdate").value;
+    const identifier = {
+      system: "http://www.miniaf.alp/citreg",
+      value: document.getElementById("identifier").value
+    };
+
+    const patientResource = {
+      resourceType: 'Patient',
+      meta: {
+        tag: [
+          {
+            system: "http://www.alpha.alp/use-case",
+            code: "EX25HSE"
+          },
+        ],
+      },
+      text: {
+        status: "generated",
+        div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><b>Patient:</b> "+ family.toUpper() + ", " + given + ", " + birthdate + ", Cit.id " + identifier.value +"</div>"
+      },
+      name: [
+        {
+          given: [given],
+          family: family,
+        },
+      ],
+      birthDate: birthdate,
+      identifier: [ identifier ]
+    };
+
+    return patientResource;
   }
 
-  const retrieveBtn = document.getElementById("retrieve");
+  const createBtn = document.getElementById("create");
 
   const client = FHIR.client("https://hapi.fhir.org/baseR4");
 
-  retrieveBtn.onclick = () => {
-    client.request("Patient/" + document.getElementById("tech-id").value)
+  createBtn.onclick = () => {
+    var pat = makePatient();
+
+    client.create(pat)
     .then(displayPatient)
     .catch(displayError);
   }
 
-  showBtn.onclick = () => {
-    showJson(resource);
-  }
 </script>
 
 </html>

@@ -3,7 +3,7 @@
 <head>
 
   <meta charset="utf-8" />
-  <title>Retrieve a FHIR Patient</title>
+  <title>Create a FHIR Observation</title>
 
   <link rel="icon" href="static/styles/common/favicon.ico" />
 
@@ -82,40 +82,42 @@
           <div class="row">
             <div class="col-md-24">
               <div id="preview-content">
-  <h1 id="page-title">Retrieve a FHIR Patient</h1>
-  Please input a Patient's technical id and click on 'Retrieve':<br><br>
-  <label for="tech-id">Technical id</label>
-  <input type="text" id="tech-id" name="tech-id">
-  <input type="button" id="retrieve" value="Retrieve"/>
-  <br><br>
-  <div id="patient"></div>
-  <br><br>
-  <input type="button" id="showBtn" value="Show JSON" hidden/>
-  <div id="show"></div>
-</div>
-</div>
-</div>
-</div>
-</div>
-</div>
-<div class="ig-view-footer" role="contentinfo" aria-label="Footer">
-<div class="container">
-<div class="row">
-</div>
-</div>
-</div>
-</div>
+                <h1 id="page-title">Create a FHIR Observation</h1>
+                Please enter the body weight value and input the technical id to link the Observation to a Patient, then click 'Create':<br><br>
+                <label for="weight">Body weight </label>
+                <input type="number" id="weight" name="weight" value="85"> kg<br>
+                <label for="tech-id">Patient's technical identity </label>
+                <input type="text" id="tech-id" name="tech-id"><br><br>
+
+                <input type="button" id="create" value="Create" />
+                <br><br>
+                <div id="observation"></div>
+                <br><br>
+                <input type="button" id="showBtn" value="Show JSON" hidden />
+                <div id="show"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ig-view-footer" role="contentinfo" aria-label="Footer">
+      <div class="container">
+        <div class="row">
+        </div>
+      </div>
+    </div>
+  </div>
 
 </body>
 <script type="text/javascript">
   var resource = null;
 
-  function displayPatient(data) {
-    const output = document.getElementById("patient");
+  function displayObservation(data) {
+    const output = document.getElementById("observation");
     output.innerHTML =
-        "<i>Patient " + document.getElementById("tech-id").value + " was retrieved</i><br><br>Patient's name(s): " +
-        getPatientName(data) + "<br>Born on: " + getPatientBirthdate(data) + "<br>" +
-        "Identifiers: " + getPatientIdentifier(data);
+      "<i>The Observation was successfully created</i><br><br>The server has created the Observation with technical id: " +
+      getObservationId(data);
 
     resource = data;
     document.getElementById("show").innerText = null;
@@ -123,49 +125,87 @@
   }
 
   function displayError(data) {
-      const output = document.getElementById("patient");
-      if (data.name == "HttpError")
-        output.innerText = "Error: Patient not found (HttpError 404)";
+    const output = document.getElementById("patient");
+    if (data.name == "HttpError")
+      output.innerText = "Error: Patient could not be created";
 
-      document.getElementById("showBtn").hidden = true;
-      document.getElementById("show").innerText = null;
+    document.getElementById("showBtn").hidden = true;
+    document.getElementById("show").innerText = null;
   }
 
-  function getPatientName (pt) {
-    if (pt.name) {
-      var names = pt.name.map(function(name) {
-        return name.given.join(" ") + " " + name.family;
-      });
-      return names.join(" / ")
+  function getObservationId(obs) {
+    if (obs.id) {
+      return obs.id;
     } else {
-      return "anonymous";
+      return "something went wrong: no id present";
     }
   }
-  function getPatientBirthdate (pt) {
-    return pt.birthDate ? pt.birthDate : "<i>no date given</i>";
+
+  function makeObservation() {
+    const weight = document.getElementById("weight").value;
+    const techId = document.getElementById("tech-id").value;
+
+    const observationResource = {
+      resourceType: "Observation",
+      meta: {
+        tag: [{
+          system: "http://www.alpha.alp/use-case",
+          code: "EX25HSE"
+        }, ],
+      },
+      text: {
+        status: "generated",
+        div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">\n&#9;&#9;&#9;<p>Observation: Body weight, " + weight + " kg</p>\n&#9;&#9;</div>"
+      },
+      status: "final",
+      category: [{
+        coding: [{
+          system: "http://hl7.org/fhir/observation-category",
+          code: "vital-signs",
+          display: "Vital Signs"
+        }],
+        text: "Vital Signs"
+      }],
+      code: {
+        coding: [{
+          system: "http://loinc.org",
+          code: "29463-7",
+          display: "Body weight"
+        }],
+        text: "Body weight"
+      },
+      subject: {
+        reference: "Patient/" + techId
+      },
+      effectiveDateTime: "2025-02-05",
+      performer: [{
+        reference: "Patient/" + techId
+      }],
+      valueQuantity: {
+        value: weight,
+        unit: "kg",
+        system: "http://unitsofmeasure.org",
+        code: "kg"
+      }
+    }
+
+    return observationResource;
   }
-  function getPatientIdentifier (pt) {
-    if (pt.identifier) {
-      var identifiers = pt.identifier.map(function(identifier) {
-        return identifier.system + "|" + identifier.value;
-      });
-      return identifiers.join("; ")
-    } else {
-      return "<i>no identifiers</i>";
-    }  }
 
   function showJson(res) {
     const output = document.getElementById("show");
     output.innerText = JSON.stringify(res, null, 4);
   }
 
-  const retrieveBtn = document.getElementById("retrieve");
+  const createBtn = document.getElementById("create");
 
   const client = FHIR.client("https://hapi.fhir.org/baseR4");
 
-  retrieveBtn.onclick = () => {
-    client.request("Patient/" + document.getElementById("tech-id").value)
-    .then(displayPatient)
+  createBtn.onclick = () => {
+    var obs = makeObservation();
+
+    client.create(obs)
+    .then(displayObservation)
     .catch(displayError);
   }
 
