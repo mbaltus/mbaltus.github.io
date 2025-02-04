@@ -176,7 +176,8 @@
 
   const searchBtn = document.getElementById("search");
 
-  const client = FHIR.client("https://hapi.fhir.org/baseR4");
+  //const client = FHIR.client("https://hapi.fhir.org/baseR4");
+  const client = FHIR.client("https://server.fire.ly/R4");
 
   searchBtn.onclick = () => {
     document.getElementById("bundle").innerHTML = "Loading...";
